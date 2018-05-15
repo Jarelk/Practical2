@@ -124,17 +124,13 @@ def get_normals(context):
 
 # Returns an query radius for the given point set
 def get_radius(points):
-    
-    # TODO: Implement
-    
-    return 1
+    (b, t) = bounding_box(points)
+    return 0.1 
 
 # Returns the epsilon for the given point set
 def get_epsilon(points):
-    
-    # TODO: Implement
-    
-    return 1
+    (b, t) = bounding_box(points)
+    return 0.01 * distance(b, t)
     
 # Returns the degree 'k' used in this reconstruction
 def get_degree():
@@ -143,9 +139,16 @@ def get_degree():
 # Returns the minimum and the maximum corner of a point set
 def bounding_box(points):
     
-    # TODO: implement
-
-    return (Vector([-1, -1, -1]), Vector([1, 1, 1]))
+    bottom = Vector([0, 0, 0])
+    top = Vector([0, 0, 0])
+    for p in points:
+        for i in [0, 1, 2]:
+            if p[i] < bottom[i]:
+                bottom[i] = p[i]
+            if p[i] > bottom[i]:
+                top[i] = p[i]
+            
+    return (bottom, top)
     
 # The vector containing the values for '{c_m}'
 def constraint_points(points, normals, epsilon, radius):
