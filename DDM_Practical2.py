@@ -50,10 +50,8 @@ class My_Marching_Cubes(ddm.Marching_Cubes):
         self.degree = degree
         self.wendland_constant = wendland_constant
         
-        # TODO: construct a ddm.Grid
-        # Use this grid for queries
-        self.grid = None
         
+        self.grid = ddm.Grid(points)        
     
     # Returns the normals belonging to a given (sub)set of points
     def normals_for_points(self, points):
@@ -62,7 +60,7 @@ class My_Marching_Cubes(ddm.Marching_Cubes):
             result.append(self.point_normal[(point[0], point[1], point[2])])
         return result
 
-        # Queries the grid for all points around q within radius
+    # Queries the grid for all points around q within radius
     def query_points(self, q, radius):
         result = []
         for point in self.grid.query(q, radius):
@@ -72,7 +70,14 @@ class My_Marching_Cubes(ddm.Marching_Cubes):
     # This function returns the result of estimated function f(q) which is essentially the entire estimation plus the calculation of its result, note that the estimated polynomial is different for every q = (x, y, z)
     def sample(self, x, y, z):
         
+        q = Vector([x, y, z])
+        
         # TODO: make sure that your radial query always contains enough points to a) ensure that the MLS is well defined, b) you always know if you are on the inside or outside of the object.
+        query = self.query_points( q, self.radius)
+        normals = self.normals_for_points(query)
+        
+        constraints = constraint_points(query, normals, self.epsilon, self.radius)
+        c = MatrixC(q, constraints, self.degree)
         
         return distance(Vector([0, 0, 0]), Vector([x, y, z])) - 1
         
@@ -81,9 +86,9 @@ class My_Marching_Cubes(ddm.Marching_Cubes):
 def DDM_Practical2(context):
 
     # TODO: modify this function so it performs reconstruction on the active point cloud
-    
-    points = []
-    normals = []
+    print("MLS")
+    points = get_vertices(context)
+    normals = get_normals(context)
     epsilon = get_epsilon(points)
     radius = get_radius(points)
     wendland_constant = 0.1
@@ -153,23 +158,37 @@ def bounding_box(points):
 # The vector containing the values for '{c_m}'
 def constraint_points(points, normals, epsilon, radius):
     
-    # TODO: Implement
+    column = []
+    for i in range(len(points)):
+        p = points[i]
+        n = normals[i]
+        
+        column.append(p)
+        column.append(p + epsilon * n)
+        column.append(p - epsilon * n)
     
-    return [Vector([0, 0, 0])]
+    return column
 
 # The vector 'd'
 def constraint_values(points, normals, epsilon, radius):
     
-    # TODO: Implement
+    d = []
+    for p in points:
+        d.append (0)
+        d.append ( epsilon)
+        d.append (-epsilon)
     
-    return [0]
+    return d
     
 # The vector (NOT matrix) 'W'
 def weights(q, constraints, wendland_constant):
     
-    # TODO: Implement
+    w = []
+    for c in constraints:
+        d = distance(q, c)
+        w_c = Wendland(d, wendland_constant)
     
-    return [0]
+    return w
 
 # The vector that contains the numerical values of each term of the polynomial, this is NOT vector 'a'
 def indeterminate(q, degree):
@@ -211,6 +230,21 @@ def distance(a, b):
 # This function is the same as from the previous practical
 def show_mesh(triangles):
     
-    # TODO: Copy from the previous Practical
+    me = bpy.data.meshes.new("Mesh")
+    ob = bpy.data.objects.new("mesh", me)
+    bpy.context.scene.objects.link(ob)
     
-    pass
+    edges = []
+    faces = []
+    verts = []
+    i = 0
+    for triangle in triangles:
+        for j in range(0, 3):
+            verts.append(triangle[j])
+        faces.append( (i, i+1, i+2) )  
+        i += 3
+ 
+    # Create mesh from given verts, edges, faces. Either edges or
+    # faces should be [], or you ask for problems
+    me.from_pydata(verts, edges, faces)
+    return
