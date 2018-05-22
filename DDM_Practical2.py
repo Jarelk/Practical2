@@ -78,6 +78,13 @@ class My_Marching_Cubes(ddm.Marching_Cubes):
         
         constraints = constraint_points(query, normals, self.epsilon, self.radius)
         c = MatrixC(q, constraints, self.degree)
+        c_t = c.transpose()
+        w = weights(q, constraints, self.wendland_constant)
+        d = constraint_values(query, normals, self.epsilon, self.radius)
+        
+        left = c_t * w * c
+        #print (c_t, w, c, left)
+        a = numpy.linalg.solve(c_t * w * c, c_t * w * d)
         
         return distance(Vector([0, 0, 0]), Vector([x, y, z])) - 1
         
@@ -130,7 +137,7 @@ def get_normals(context):
 # Returns an query radius for the given point set
 def get_radius(points):
     (b, t) = bounding_box(points)
-    return 0.1 
+    return 0.1 * distance(b, t)
 
 # Returns the epsilon for the given point set
 def get_epsilon(points):
