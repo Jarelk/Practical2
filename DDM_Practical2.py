@@ -74,8 +74,8 @@ class My_Marching_Cubes(ddm.Marching_Cubes):
         # TODO: make sure that your radial query always contains enough points to a) ensure that the MLS is well defined, b) you always know if you are on the inside or outside of the object.
         r = self.radius
         query = self.query_points( q, r )
-        if len(query) < 4:
-            r *= 4
+        while len(query) < 4:
+            r *= 2
             query = self.query_points( q, r )
             
         normals = self.normals_for_points(query)
@@ -105,11 +105,20 @@ def DDM_Practical2(context):
     radius = get_radius(points)
     wendland_constant = 0.1
     degree = get_degree()
-    print ("Radius:", radius)
-    
     mc = My_Marching_Cubes(points, normals, epsilon, radius, wendland_constant, degree)
     
-    triangles = mc.calculate(-1, -1, -1, 20, 20, 20, 0.1)
+    bb = bounding_box(points)
+    bb_distances = bb[1] - bb[0]
+    bb = (bb[0] - Vector([0.05 * bb_distances.x, 0.05 * bb_distances.y, 0.05 * bb_distances.z]), bb[1] + Vector([0.05 * bb_distances.x, 0.05 * bb_distances.y, 0.05 * bb_distances.z]))
+    bb_distances = bb[1] - bb[0]
+    
+    cube_size = ((bb_distances.x * bb_distances.y * bb_distances.z) / 8000) ** (1/3)
+
+    cube_x = int(bb_distances.x / cube_size)
+    cube_y = int(bb_distances.x / cube_size)
+    cube_z = int(bb_distances.z / cube_size)
+    
+    triangles = mc.calculate(bb[0][0], bb[0][1], bb[0][2], cube_x, cube_y, cube_z, cube_size)
     
     show_mesh(triangles)
 
@@ -161,16 +170,16 @@ def get_degree():
 # Returns the minimum and the maximum corner of a point set
 def bounding_box(points):
     
-    bottom = Vector([0, 0, 0])
-    top = Vector([0, 0, 0])
+    bottom = [0, 0, 0]
+    top = [0, 0, 0]
     for p in points:
         for i in [0, 1, 2]:
             if p[i] < bottom[i]:
                 bottom[i] = p[i]
-            if p[i] > bottom[i]:
+            if p[i] > top[i]:
                 top[i] = p[i]
             
-    return (bottom, top)
+    return (Vector(bottom), Vector(top))
     
 # The vector containing the values for '{c_m}'
 def constraint_points(points, normals, epsilon, radius):
