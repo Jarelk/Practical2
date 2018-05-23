@@ -50,7 +50,6 @@ class My_Marching_Cubes(ddm.Marching_Cubes):
         self.degree = degree
         self.wendland_constant = wendland_constant
         
-        
         self.grid = ddm.Grid(points)        
     
     # Returns the normals belonging to a given (sub)set of points
@@ -73,7 +72,10 @@ class My_Marching_Cubes(ddm.Marching_Cubes):
         q = Vector([x, y, z])
         
         # TODO: make sure that your radial query always contains enough points to a) ensure that the MLS is well defined, b) you always know if you are on the inside or outside of the object.
-        query = self.query_points( q, self.radius)
+        query = self.query_points( q, self.radius )
+        if len(query) == 0:
+            return 0
+            
         normals = self.normals_for_points(query)
         
         constraints = constraint_points(query, normals, self.epsilon, self.radius)
@@ -82,11 +84,12 @@ class My_Marching_Cubes(ddm.Marching_Cubes):
         w = numpy.diag(weights(q, constraints, self.wendland_constant))
         d = constraint_values(query, normals, self.epsilon, self.radius)
         
-        left = c_t * w * c
-        #print (c_t, w, c, left)
-        a = numpy.linalg.solve(c_t * w * c, c_t * w * d)
+        left  = numpy.matmul(c_t, numpy.matmul(w, c))
+        right = numpy.matmul(c_t, numpy.matmul(w, d))
         
-        return distance(Vector([0, 0, 0]), Vector([x, y, z])) - 1
+        a = numpy.linalg.solve(left, right)
+        
+        return polynomial(q, a, self.degree)
         
         
 # This function is called when the DDM Practical 2 operator is selected in Blender.
@@ -137,7 +140,7 @@ def get_normals(context):
 # Returns an query radius for the given point set
 def get_radius(points):
     (b, t) = bounding_box(points)
-    return 0.1 * distance(b, t)
+    return 0.2 * distance(b, t)
 
 # Returns the epsilon for the given point set
 def get_epsilon(points):
@@ -194,6 +197,7 @@ def weights(q, constraints, wendland_constant):
     for c in constraints:
         d = distance(q, c)
         w_c = Wendland(d, wendland_constant)
+        w.append(w_c)
     
     return w
 
@@ -218,7 +222,8 @@ def polynomial(p, a, degree):
 def MatrixC(q, constraints, degree):    
     
     #Create a list of lists, with the indeterminates of q as the first entry
-    mtx = [indeterminate(q, degree)]
+    # indeterminate(q, degree)
+    mtx = []
 
     #expand the list with indeterminates of each contraint
     for i in constraints:
