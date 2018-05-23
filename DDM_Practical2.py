@@ -50,7 +50,7 @@ class My_Marching_Cubes(ddm.Marching_Cubes):
         self.degree = degree
         self.wendland_constant = wendland_constant
         
-        self.grid = ddm.Grid(points)        
+        self.grid = ddm.Grid([point.to_tuple() for point in points])   
     
     # Returns the normals belonging to a given (sub)set of points
     def normals_for_points(self, points):
@@ -108,8 +108,15 @@ def DDM_Practical2(context):
     print ("Radius:", radius)
     
     mc = My_Marching_Cubes(points, normals, epsilon, radius, wendland_constant, degree)
-    
-    triangles = mc.calculate(-1, -1, -1, 20, 20, 20, 0.1)
+
+    bb = bounding_box(points)
+    bb_distances = bb[1] - bb[0]
+
+
+    modVec = Vector([0.5 * x_mod * cube_size, 0.5 * y_mod * cube_size, 0.5 * z_mod * cube_size])
+    bb = (bb[0] - modVec, bb[1] + modVec)
+
+    triangles = mc.calculate(bb[0][0], bb[0][1], bb[0][2], cube_x + 1, cube_y + 1, cube_z + 1, cube_size)
     
     show_mesh(triangles)
 
@@ -161,16 +168,25 @@ def get_degree():
 # Returns the minimum and the maximum corner of a point set
 def bounding_box(points):
     
-    bottom = Vector([0, 0, 0])
-    top = Vector([0, 0, 0])
+    bottom = [points[0].x, points[0].y, points[0].z]
+    top = [points[0].x, points[0].y, points[0].z]
+    print("init bb")
+    print(bottom)
+    print(top)
     for p in points:
-        for i in [0, 1, 2]:
-            if p[i] < bottom[i]:
-                bottom[i] = p[i]
-            if p[i] > bottom[i]:
-                top[i] = p[i]
-            
-    return (bottom, top)
+        if p.x < bottom[0]:
+            bottom[0] = p.x
+        if p.y < bottom[1]:
+            bottom[1] = p.y
+        if p.z < bottom[2]:
+            bottom[2] = p.z
+        if p.x > top[0]:
+            top[0] = p.x
+        if p.y > top[1]:
+            top[1] = p.y
+        if p.z > top[2]:
+            top[2] = p.z
+    return (Vector(bottom), Vector(top))
     
 # The vector containing the values for '{c_m}'
 def constraint_points(points, normals, epsilon, radius):
