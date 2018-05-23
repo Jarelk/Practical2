@@ -213,8 +213,11 @@ def polynomial(p, a, degree):
 def MatrixC(q, constraints, degree):    
     
     # TODO: Implement
-    
-    return new_Matrix([1, 1])
+    mtx = [indeterminate(q, degree)]
+    for i in constraints:
+        mtx.append(indeterminate(i, degree))
+
+    return numpy.array(mtx)
     
 # Returns the Wendland weight for a given distance with shape/range parameter wendland_constant
 def Wendland(distance, wendland_constant):
