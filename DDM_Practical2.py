@@ -112,6 +112,13 @@ def DDM_Practical2(context):
     bb = bounding_box(points)
     bb_distances = bb[1] - bb[0]
 
+    cube_size = ((bb_distances.x * bb_distances.y * bb_distances.z) / 8000) ** (1/3)
+    cube_x = int(bb_distances.x / cube_size)
+    cube_y = int(bb_distances.y / cube_size)
+    cube_z = int(bb_distances.z / cube_size)
+    x_mod = 1 - ((bb_distances.x / cube_size) % cube_x)
+    y_mod = 1 - ((bb_distances.y / cube_size) % cube_y)
+    z_mod = 1 - ((bb_distances.z / cube_size) % cube_z)
 
     modVec = Vector([0.5 * x_mod * cube_size, 0.5 * y_mod * cube_size, 0.5 * z_mod * cube_size])
     bb = (bb[0] - modVec, bb[1] + modVec)
