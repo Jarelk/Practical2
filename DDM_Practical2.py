@@ -144,8 +144,12 @@ def get_radius(points):
 
 # Returns the epsilon for the given point set
 def get_epsilon(points):
-    (b, t) = bounding_box(points)
-    return 0.01 * distance(b, t)
+    smallest_distance = 9999999
+    for i in points:
+        for j in points:
+            if i != j and distance(i,j) < smallest_distance:
+                smallest_distance = distance(i,j)
+    return 0.5 * smallest_distance
     
 # Returns the degree 'k' used in this reconstruction
 def get_degree():
