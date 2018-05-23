@@ -212,11 +212,14 @@ def polynomial(p, a, degree):
 # NOTE: There is no need for this function to be passed the parameters 'wendland_constant', 'epsilon' and 'radius', you can structure the assignment in such a way this is not necessary.
 def MatrixC(q, constraints, degree):    
     
-    # TODO: Implement
+    #Create a list of lists, with the indeterminates of q as the first entry
     mtx = [indeterminate(q, degree)]
+
+    #expand the list with indeterminates of each contraint
     for i in constraints:
         mtx.append(indeterminate(i, degree))
 
+    #Returns the list as a numpy array, which seems to be the correct format
     return numpy.array(mtx)
     
 # Returns the Wendland weight for a given distance with shape/range parameter wendland_constant
