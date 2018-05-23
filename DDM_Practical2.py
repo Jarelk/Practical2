@@ -204,9 +204,14 @@ def indeterminate(q, degree):
 # For a given list of coefficients a, use this to find the actual value for 'f(p)'
 def polynomial(p, a, degree):
     
-    # TODO: Implement
-    
-    return 0
+    #get the indeterminate values
+    ind = indeterminate(p, degree)
+
+    #Solve the polynomial and return the function value
+    num = 0
+    for i in range(len(a)):
+        num += ind[i] * a[i]
+    return num
     
 # Returns 'C'
 # NOTE: There is no need for this function to be passed the parameters 'wendland_constant', 'epsilon' and 'radius', you can structure the assignment in such a way this is not necessary.
