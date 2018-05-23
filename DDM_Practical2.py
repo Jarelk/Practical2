@@ -79,7 +79,7 @@ class My_Marching_Cubes(ddm.Marching_Cubes):
         constraints = constraint_points(query, normals, self.epsilon, self.radius)
         c = MatrixC(q, constraints, self.degree)
         c_t = c.transpose()
-        w = weights(q, constraints, self.wendland_constant)
+        w = numpy.diag(weights(q, constraints, self.wendland_constant))
         d = constraint_values(query, normals, self.epsilon, self.radius)
         
         left = c_t * w * c
