@@ -72,9 +72,11 @@ class My_Marching_Cubes(ddm.Marching_Cubes):
         q = Vector([x, y, z])
         
         # TODO: make sure that your radial query always contains enough points to a) ensure that the MLS is well defined, b) you always know if you are on the inside or outside of the object.
-        query = self.query_points( q, self.radius )
-        if len(query) == 0:
-            return 0
+        r = self.radius
+        query = self.query_points( q, r )
+        if len(query) < 4:
+            r *= 4
+            query = self.query_points( q, r )
             
         normals = self.normals_for_points(query)
         
@@ -103,6 +105,7 @@ def DDM_Practical2(context):
     radius = get_radius(points)
     wendland_constant = 0.1
     degree = get_degree()
+    print ("Radius:", radius)
     
     mc = My_Marching_Cubes(points, normals, epsilon, radius, wendland_constant, degree)
     
@@ -140,7 +143,7 @@ def get_normals(context):
 # Returns an query radius for the given point set
 def get_radius(points):
     (b, t) = bounding_box(points)
-    return 0.2 * distance(b, t)
+    return 0.15 * distance(b, t)
 
 # Returns the epsilon for the given point set
 def get_epsilon(points):
