@@ -50,7 +50,7 @@ class My_Marching_Cubes(ddm.Marching_Cubes):
         self.degree = degree
         self.wendland_constant = wendland_constant
         
-        self.grid = ddm.Grid(points)        
+        self.grid = ddm.Grid([point.to_tuple() for point in points])   
     
     # Returns the normals belonging to a given (sub)set of points
     def normals_for_points(self, points):
@@ -106,19 +106,22 @@ def DDM_Practical2(context):
     wendland_constant = 0.1
     degree = get_degree()
     mc = My_Marching_Cubes(points, normals, epsilon, radius, wendland_constant, degree)
-    
+
     bb = bounding_box(points)
     bb_distances = bb[1] - bb[0]
-    bb = (bb[0] - Vector([0.05 * bb_distances.x, 0.05 * bb_distances.y, 0.05 * bb_distances.z]), bb[1] + Vector([0.05 * bb_distances.x, 0.05 * bb_distances.y, 0.05 * bb_distances.z]))
-    bb_distances = bb[1] - bb[0]
-    
-    cube_size = ((bb_distances.x * bb_distances.y * bb_distances.z) / 8000) ** (1/3)
 
+    cube_size = ((bb_distances.x * bb_distances.y * bb_distances.z) / 8000) ** (1/3)
     cube_x = int(bb_distances.x / cube_size)
-    cube_y = int(bb_distances.x / cube_size)
+    cube_y = int(bb_distances.y / cube_size)
     cube_z = int(bb_distances.z / cube_size)
-    
-    triangles = mc.calculate(bb[0][0], bb[0][1], bb[0][2], cube_x, cube_y, cube_z, cube_size)
+    x_mod = 1 - ((bb_distances.x / cube_size) % cube_x)
+    y_mod = 1 - ((bb_distances.y / cube_size) % cube_y)
+    z_mod = 1 - ((bb_distances.z / cube_size) % cube_z)
+
+    modVec = Vector([0.5 * x_mod * cube_size, 0.5 * y_mod * cube_size, 0.5 * z_mod * cube_size])
+    bb = (bb[0] - modVec, bb[1] + modVec)
+
+    triangles = mc.calculate(bb[0][0], bb[0][1], bb[0][2], cube_x + 1, cube_y + 1, cube_z + 1, cube_size)
     
     show_mesh(triangles)
 
