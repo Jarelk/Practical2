@@ -12,6 +12,7 @@
 import ddm
 import bpy
 import numpy
+import math
 
 # To view the printed output toggle the system console in "Window -> Toggle System Console"
 
@@ -20,7 +21,7 @@ import numpy
 def mesh_from_array(A, n):
     def get_point(ax, ay):
         return A[ax + ay * n]
-    
+
     quads = []
     for x in range(n - 1):
         for y in range(n - 1):
@@ -37,16 +38,58 @@ def mesh_from_array(A, n):
 def De_Casteljau(A, n, s):
     def get_point(ax, ay):
         return A[ax + ay * n]
+    
+    size = subdivisions(n, s)
+    print(size)
+    sizelist = [x * 1/size for x in range(0, size + 1)]
+    print("Length:" + str(len(sizelist)))
+    print(sizelist)
 
     new_mesh = []
-    for x in range(n-1):
-        for y in range(n-1):
-            (p1x, p1y, p1z) = get_point(x, y)
-            (p2x, p2y, p2z) = get_point(x, y+1)
-            new_point = ((p1x + p2x) / 2, (p1y + p2y) / 2, (p1z + p2z) / 2)
-            new_mesh.append(new_point)
-    print("Casteljau:", new_mesh)
+    for v in range(len(sizelist)):
+        for u in range(len(sizelist)):
+            point_u_v = (0, 0, 0)
+            for i in range(n):
+                Bernstein_iu = (math.factorial(n) / (math.factorial(i) * math.factorial(n - i))) * math.pow(sizelist[u],i) * math.pow((1 - sizelist[u]), (n - i))
+                for j in range(n):
+                    Bernstein_jv = (math.factorial(n) / (math.factorial(j) * math.factorial(n - j))) * math.pow(sizelist[v],j) * math.pow((1 - sizelist[v]), (n - j))
+                    point_u_v = tuple([tup + Bernstein_iu * Bernstein_jv * tup for tup in get_point(i,j)])
+            new_mesh.append(point_u_v)
+            print(point_u_v)
+    print("Length of new_mesh: " + str(len(new_mesh)))
+    print(sizelist)
     return new_mesh
+
+#This here is my previous method which sucks
+"""     for y in range(n):
+        points = A[n * y:n * y + n].copy()
+        new_mesh.append(points[0])
+        for i in range((n - 1) * (s + 1) - 1):
+            u = (i + 1) / ((n-1) * (s+1) - 1)
+            u_points = points.copy()
+            while len(u_points) > 1:
+                for j in range(len(u_points) - 1):
+                    u_points[j] = u_points[j] + u * (u_points[j+1] - u_points[j])
+                u_points.pop()
+            new_mesh.append(u_points[0])
+        new_mesh.append(points.pop())
+    
+    for x in range((n - 1 ) * (s + 1) + 1):
+        points = []
+        for p in range(n):
+            points.append(x + p * ((n - 1 ) * (s + 1) + 1))
+        for i in range((n - 1) * (s + 1) - 1):
+            u = (i + 1) / ((n-1) * (s+1) - 1)
+            u_points = points.copy()
+            while len(u_points) > 1:
+                for j in range(len(u_points) - 1):
+                    u_points[j] = u_points[j] + u * (u_points[j+1] - u_points[j])
+                u_points.pop()
+            if (i+1) % (s+1) == 0:
+
+            new_mesh.insert(u_points[0])
+        new_mesh.append(points.pop())
+         """
 
 def control_mesh(n, length):
     array = []
@@ -67,7 +110,7 @@ def line_intersect(A, n, p1, p2, e):
     return False
     
 def subdivisions(n, s):
-    return 1
+    return (n - 1) * (s + 1) + 1
     
 def DDM_Practical3(context):
     print ("DDM Practical 3")
@@ -76,12 +119,12 @@ def DDM_Practical3(context):
     s = 3
     
     A = control_mesh(n, length)
+
+    show_mesh(mesh_from_array(A, n))
     B = De_Casteljau(A, n, s)
     
-    # TODO: Calculate the new size of the subdivided surface
-    n_B = subdivisions(1, s)
+    n_B = subdivisions(n, s) + 1
     
-    #show_mesh(mesh_from_array(A, n))
     
     show_mesh(mesh_from_array(B, n_B))
     
