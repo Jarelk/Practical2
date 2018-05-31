@@ -50,8 +50,7 @@ class My_Marching_Cubes(ddm.Marching_Cubes):
         self.degree = degree
         self.wendland_constant = wendland_constant
         
-        
-        self.grid = ddm.Grid(points)        
+        self.grid = ddm.Grid([point.to_tuple() for point in points])   
     
     # Returns the normals belonging to a given (sub)set of points
     def normals_for_points(self, points):
@@ -73,20 +72,26 @@ class My_Marching_Cubes(ddm.Marching_Cubes):
         q = Vector([x, y, z])
         
         # TODO: make sure that your radial query always contains enough points to a) ensure that the MLS is well defined, b) you always know if you are on the inside or outside of the object.
-        query = self.query_points( q, self.radius)
+        r = self.radius
+        query = self.query_points( q, r )
+        while len(query) < 4:
+            r *= 2
+            query = self.query_points( q, r )
+            
         normals = self.normals_for_points(query)
         
         constraints = constraint_points(query, normals, self.epsilon, self.radius)
         c = MatrixC(q, constraints, self.degree)
         c_t = c.transpose()
-        w = weights(q, constraints, self.wendland_constant)
+        w = numpy.diag(weights(q, constraints, self.wendland_constant))
         d = constraint_values(query, normals, self.epsilon, self.radius)
         
-        left = c_t * w * c
-        #print (c_t, w, c, left)
-        a = numpy.linalg.solve(c_t * w * c, c_t * w * d)
+        left  = numpy.matmul(c_t, numpy.matmul(w, c))
+        right = numpy.matmul(c_t, numpy.matmul(w, d))
         
-        return distance(Vector([0, 0, 0]), Vector([x, y, z])) - 1
+        a = numpy.linalg.solve(left, right)
+        
+        return polynomial(q, a, self.degree)
         
         
 # This function is called when the DDM Practical 2 operator is selected in Blender.
@@ -100,10 +105,23 @@ def DDM_Practical2(context):
     radius = get_radius(points)
     wendland_constant = 0.1
     degree = get_degree()
-    
     mc = My_Marching_Cubes(points, normals, epsilon, radius, wendland_constant, degree)
-    
-    triangles = mc.calculate(-1, -1, -1, 20, 20, 20, 0.1)
+
+    bb = bounding_box(points)
+    bb_distances = bb[1] - bb[0]
+
+    cube_size = ((bb_distances.x * bb_distances.y * bb_distances.z) / 8000) ** (1/3)
+    cube_x = int(bb_distances.x / cube_size)
+    cube_y = int(bb_distances.y / cube_size)
+    cube_z = int(bb_distances.z / cube_size)
+    x_mod = 1 - ((bb_distances.x / cube_size) % cube_x)
+    y_mod = 1 - ((bb_distances.y / cube_size) % cube_y)
+    z_mod = 1 - ((bb_distances.z / cube_size) % cube_z)
+
+    modVec = Vector([0.5 * x_mod * cube_size, 0.5 * y_mod * cube_size, 0.5 * z_mod * cube_size])
+    bb = (bb[0] - modVec, bb[1] + modVec)
+
+    triangles = mc.calculate(bb[0][0], bb[0][1], bb[0][2], cube_x + 1, cube_y + 1, cube_z + 1, cube_size)
     
     show_mesh(triangles)
 
@@ -137,12 +155,16 @@ def get_normals(context):
 # Returns an query radius for the given point set
 def get_radius(points):
     (b, t) = bounding_box(points)
-    return 0.1 * distance(b, t)
+    return 0.15 * distance(b, t)
 
 # Returns the epsilon for the given point set
 def get_epsilon(points):
-    (b, t) = bounding_box(points)
-    return 0.01 * distance(b, t)
+    smallest_distance = 9999999
+    for i in points:
+        for j in points:
+            if i != j and distance(i,j) < smallest_distance:
+                smallest_distance = distance(i,j)
+    return 0.5 * smallest_distance
     
 # Returns the degree 'k' used in this reconstruction
 def get_degree():
@@ -151,16 +173,16 @@ def get_degree():
 # Returns the minimum and the maximum corner of a point set
 def bounding_box(points):
     
-    bottom = Vector([0, 0, 0])
-    top = Vector([0, 0, 0])
+    bottom = [0, 0, 0]
+    top = [0, 0, 0]
     for p in points:
         for i in [0, 1, 2]:
             if p[i] < bottom[i]:
                 bottom[i] = p[i]
-            if p[i] > bottom[i]:
+            if p[i] > top[i]:
                 top[i] = p[i]
             
-    return (bottom, top)
+    return (Vector(bottom), Vector(top))
     
 # The vector containing the values for '{c_m}'
 def constraint_points(points, normals, epsilon, radius):
@@ -194,6 +216,7 @@ def weights(q, constraints, wendland_constant):
     for c in constraints:
         d = distance(q, c)
         w_c = Wendland(d, wendland_constant)
+        w.append(w_c)
     
     return w
 
@@ -204,17 +227,29 @@ def indeterminate(q, degree):
 # For a given list of coefficients a, use this to find the actual value for 'f(p)'
 def polynomial(p, a, degree):
     
-    # TODO: Implement
-    
-    return 0
+    #get the indeterminate values
+    ind = indeterminate(p, degree)
+
+    #Solve the polynomial and return the function value
+    num = 0
+    for i in range(len(a)):
+        num += ind[i] * a[i]
+    return num
     
 # Returns 'C'
 # NOTE: There is no need for this function to be passed the parameters 'wendland_constant', 'epsilon' and 'radius', you can structure the assignment in such a way this is not necessary.
 def MatrixC(q, constraints, degree):    
     
-    # TODO: Implement
-    
-    return new_Matrix([1, 1])
+    #Create a list of lists, with the indeterminates of q as the first entry
+    # indeterminate(q, degree)
+    mtx = []
+
+    #expand the list with indeterminates of each contraint
+    for i in constraints:
+        mtx.append(indeterminate(i, degree))
+
+    #Returns the list as a numpy array, which seems to be the correct format
+    return numpy.array(mtx)
     
 # Returns the Wendland weight for a given distance with shape/range parameter wendland_constant
 def Wendland(distance, wendland_constant):
