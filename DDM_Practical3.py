@@ -38,58 +38,50 @@ def mesh_from_array(A, n):
 def De_Casteljau(A, n, s):
     def get_point(ax, ay):
         return A[ax + ay * n]
-    
-    size = subdivisions(n, s)
-    print(size)
-    sizelist = [x * 1/size for x in range(0, size + 1)]
-    print("Length:" + str(len(sizelist)))
-    print(sizelist)
 
-    new_mesh = []
-    for v in range(len(sizelist)):
-        for u in range(len(sizelist)):
-            point_u_v = (0, 0, 0)
-            for i in range(n):
-                Bernstein_iu = (math.factorial(n) / (math.factorial(i) * math.factorial(n - i))) * math.pow(sizelist[u],i) * math.pow((1 - sizelist[u]), (n - i))
-                for j in range(n):
-                    Bernstein_jv = (math.factorial(n) / (math.factorial(j) * math.factorial(n - j))) * math.pow(sizelist[v],j) * math.pow((1 - sizelist[v]), (n - j))
-                    point_u_v = tuple([tup + Bernstein_iu * Bernstein_jv * tup for tup in get_point(i,j)])
-            new_mesh.append(point_u_v)
-            print(point_u_v)
-    print("Length of new_mesh: " + str(len(new_mesh)))
-    print(sizelist)
-    return new_mesh
-
-#This here is my previous method which sucks
-"""     for y in range(n):
-        points = A[n * y:n * y + n].copy()
-        new_mesh.append(points[0])
-        for i in range((n - 1) * (s + 1) - 1):
-            u = (i + 1) / ((n-1) * (s+1) - 1)
-            u_points = points.copy()
-            while len(u_points) > 1:
-                for j in range(len(u_points) - 1):
-                    u_points[j] = u_points[j] + u * (u_points[j+1] - u_points[j])
-                u_points.pop()
-            new_mesh.append(u_points[0])
-        new_mesh.append(points.pop())
-    
-    for x in range((n - 1 ) * (s + 1) + 1):
+    new_mesh = [0 for i in range(n * ((n-1) * (s + 1) + 1))]
+    #print(len(new_mesh))
+    for x in range(n):
         points = []
         for p in range(n):
-            points.append(x + p * ((n - 1 ) * (s + 1) + 1))
+            points.append(get_point(x, p))
+        #print("Points for iteration " + str(x))
+        #print(points)
+        new_mesh[x] = points[0]
+        for i in range((n - 1) * (s + 1) - 1):
+            u = (i + 1) / ((n-1) * (s+1) - 1)
+            u_points = list(points)
+            #print(u_points)
+            while len(u_points) > 1:
+                for j in range(len(u_points) - 1):
+                    u_points[j] = (u_points[j][0] + u * (u_points[j+1][0] - u_points[j][0]), u_points[j][1] + u * (u_points[j+1][1] - u_points[j][1]), u_points[j][2] + u * (u_points[j+1][2] - u_points[j][2]))
+                u_points.pop()
+            print("Replacing point at index " + str((i + 1) * n + x))
+            print("Replacing with " + str(u_points[0]))
+            new_mesh[(i + 1) * n + x] = u_points[0]
+        print("Replacing point at index " + str((n-1) * (s+1) * n + x))
+        print("Replacing with " + str(u_points[len(u_points) - 1]))
+        new_mesh[(n-1) * (s+1) * n + x] = points.pop()
+    
+    #print(new_mesh)
+    new_range = int(len(new_mesh) / n)
+    new_mesh2 = []
+
+    for y in range(new_range):
+        points = new_mesh[n * y:n * y + n].copy()
+        new_mesh2.append(points[0])
         for i in range((n - 1) * (s + 1) - 1):
             u = (i + 1) / ((n-1) * (s+1) - 1)
             u_points = points.copy()
             while len(u_points) > 1:
                 for j in range(len(u_points) - 1):
-                    u_points[j] = u_points[j] + u * (u_points[j+1] - u_points[j])
+                    u_points[j] = (u_points[j][0] + u * (u_points[j+1][0] - u_points[j][0]), u_points[j][1] + u * (u_points[j+1][1] - u_points[j][1]), u_points[j][2] + u * (u_points[j+1][2] - u_points[j][2]))
                 u_points.pop()
-            if (i+1) % (s+1) == 0:
+            new_mesh2.append(u_points[0])
+        new_mesh2.append(points.pop())
 
-            new_mesh.insert(u_points[0])
-        new_mesh.append(points.pop())
-         """
+    return new_mesh2
+        
 
 def control_mesh(n, length):
     array = []
@@ -115,7 +107,7 @@ def subdivisions(n, s):
 def DDM_Practical3(context):
     print ("DDM Practical 3")
     n = 10
-    length = 10
+    length = 4
     s = 3
     
     A = control_mesh(n, length)
@@ -123,8 +115,8 @@ def DDM_Practical3(context):
     show_mesh(mesh_from_array(A, n))
     B = De_Casteljau(A, n, s)
     
-    n_B = subdivisions(n, s) + 1
-    
+    n_B = subdivisions(n, s)
+    print("n_B size: " + str(n_B))
     
     show_mesh(mesh_from_array(B, n_B))
     
