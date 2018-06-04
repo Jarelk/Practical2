@@ -151,7 +151,7 @@ def line_intersect(A, n, p1, p2, e):
         print("e", length / n)
         if iPoint != None:
            # currE = min(distanceSQR(iPoint, 
-            if length / n < e:
+            if length / n * 0.5 < e:
                 # precise enough
                 return True
             # might intersect, so subdiv and try again
